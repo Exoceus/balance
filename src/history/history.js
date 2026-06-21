@@ -5,6 +5,8 @@ import { LANE_META } from '../shared/constants.js';
 const $ = (id) => document.getElementById(id);
 const LANES = ['enrich', 'recharge', 'drift', 'unset'];
 const total = (d) => LANES.reduce((a, k) => a + (d.byLane?.[k] || 0), 0);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function fmtDur(s) {
   s = Math.round(s);
@@ -53,6 +55,23 @@ function renderSummary(days, today) {
       `<span>${days.length} day${days.length === 1 ? '' : 's'} on record</span>`);
 }
 
+// Per-video rows for one day, most-time-first. Old days (archived before per-video
+// tracking) have no video map — show a gentle note instead.
+function videoRows(day) {
+  const vids = day.videos || {};
+  const list = Object.entries(vids)
+    .map(([id, r]) => ({ id, title: r.title || '(untitled)', channel: r.channel || '', lane: r.lane || 'unset', sec: r.sec || 0 }))
+    .filter((v) => v.sec >= 1)
+    .sort((a, b) => b.sec - a.sec);
+  if (!list.length) return '<div class="vempty">No per-video detail recorded for this day.</div>';
+  return list.map((v) => `
+    <a class="vrow" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener">
+      <span class="vdot ${v.lane}" title="${LANE_META[v.lane]?.label || ''}"></span>
+      <span class="vmeta"><span class="vtitle">${esc(v.title)}</span>${v.channel ? `<span class="vchan">${esc(v.channel)}</span>` : ''}</span>
+      <span class="vsec">${fmtDur(v.sec)}</span>
+    </a>`).join('');
+}
+
 function renderDays(days, todayKey) {
   const wrap = $('days');
   if (!days.length || days.every((d) => total(d) === 0)) {
@@ -67,11 +86,15 @@ function renderDays(days, todayKey) {
       return `<span class="seg ${k}" style="width:${(sec / max) * 100}%" title="${LANE_META[k].label}: ${fmtDur(sec)}"></span>`;
     }).join('');
     const lab = dayLabel(d.dateKey, todayKey);
-    return `<div class="day">
-      <div class="lbl${lab.today ? ' today' : ''}">${lab.text}</div>
-      <div class="track">${segs}</div>
-      <div class="tot${t ? '' : ' zero'}">${t ? fmtDur(t) : '—'}</div>
-    </div>`;
+    return `<details class="dayx"${lab.today ? ' open' : ''}>
+      <summary class="day">
+        <span class="chev">▸</span>
+        <div class="lbl${lab.today ? ' today' : ''}">${lab.text}</div>
+        <div class="track">${segs}</div>
+        <div class="tot${t ? '' : ' zero'}">${t ? fmtDur(t) : '—'}</div>
+      </summary>
+      <div class="vwrap">${videoRows(d)}</div>
+    </details>`;
   }).join('');
 }
 

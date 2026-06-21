@@ -443,6 +443,7 @@
     const burn = override ? override.burn : 1;
     const st = await send({ type: 'tick', payload: {
       videoId: current.videoId, lane, seconds: delta, burnMultiplier: burn,
+      title: current.meta?.title || '', channel: current.meta?.channelName || '',
     }});
     if (st && !st.error) {
       lastState = st;
@@ -463,6 +464,7 @@
   // injected into YouTube's top header bar (the per-lane stats, replacing the old box).
   let shadow = null, scrimEl = null, cardEl = null, endEl = null;
   let headerHost = null, headerSlot = null, headerRetry = false;
+  let popSlot = null, popTimer = 0, popVideos = [];   // header hover breakdown
   let tagHost = null, tagSlot = null;
 
   function ensureUi() {
@@ -497,10 +499,68 @@
     headerHost.id = 'balance-headbar';
     headerHost.style.cssText = 'display:flex; align-items:center; margin-right:8px;';
     const sh = headerHost.attachShadow({ mode: 'open' });
-    sh.innerHTML = `<style>${HEAD_CSS}</style><div class="bar" id="bar"></div>`;
+    sh.innerHTML = `<style>${HEAD_CSS}</style>
+      <div class="hud" id="hud">
+        <div class="bar" id="bar"></div>
+        <div class="pop" id="pop" hidden></div>
+      </div>`;
     headerSlot = sh.getElementById('bar');
+    popSlot = sh.getElementById('pop');
+    const hud = sh.getElementById('hud');
+    hud.addEventListener('mouseenter', onHudEnter);
+    hud.addEventListener('mouseleave', onHudLeave);
+    popSlot.addEventListener('click', onPopClick);
     end.insertBefore(headerHost, end.firstChild);
     return true;
+  }
+
+  // ---- header hover: where today's numbers come from ----
+  function onHudEnter() {
+    clearTimeout(popTimer);
+    if (!popSlot) return;
+    positionPop();
+    popSlot.hidden = false;
+    renderPop(popVideos);                          // instant from cache + lastState
+    send({ type: 'getTodayVideos' }).then((res) => {
+      if (res && !res.error) { popVideos = res.videos || []; if (popSlot && !popSlot.hidden) renderPop(popVideos); }
+    });
+  }
+  function onHudLeave() {
+    clearTimeout(popTimer);
+    popTimer = setTimeout(() => { if (popSlot) popSlot.hidden = true; }, 180);
+  }
+  function onPopClick(e) {
+    if (e.target.closest('[data-act="history"]')) send({ type: 'openHistory' });
+  }
+  function positionPop() {
+    if (!popSlot || !headerSlot) return;
+    const r = headerSlot.getBoundingClientRect();
+    popSlot.style.top = (r.bottom + 8) + 'px';
+    popSlot.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  }
+  function renderPop(videos) {
+    if (!popSlot) return;
+    const byLane = (lastState && lastState.byLane) || {};
+    const total = ['enrich', 'recharge', 'drift', 'unset'].reduce((a, k) => a + (byLane[k] || 0), 0);
+    const laneLine = ['enrich', 'recharge', 'drift']
+      .map((k) => `${LANE_META[k].emoji} <b>${clock(byLane[k] || 0)}</b>`).join('&nbsp;&nbsp;');
+    const top = (videos || []).slice(0, 8);
+    const rows = top.map((v) => {
+      const m = LANE_META[v.lane] || LANE_META.unset;
+      return `<div class="pv">
+        <span class="pdot" style="background:${m.color}"></span>
+        <span class="pi"><div class="pti" title="${esc(v.title)}">${esc(v.title || '(untitled)')}</div>${v.channel ? `<div class="pc">${esc(v.channel)}</div>` : ''}</span>
+        <span class="pse">${clock(v.sec)}</span>
+      </div>`;
+    }).join('');
+    const extra = (videos || []).length - top.length;
+    const more = extra > 0 ? `<div class="pmore">+ ${extra} more video${extra > 1 ? 's' : ''}</div>` : '';
+    const body = top.length ? rows + more : '<div class="pempty">No watch time logged yet today.</div>';
+    popSlot.innerHTML = `
+      <div class="ph"><span class="pt">Today</span><span class="pn">${clock(total)}</span></div>
+      <div class="plane">${laneLine}</div>
+      ${body}
+      <div class="pfoot"><button class="pbtn" data-act="history">View full history →</button></div>`;
   }
 
   // Compact per-lane stats, rendered into the top header bar (hidden in fullscreen — the
@@ -834,10 +894,12 @@
   // Compact stats bar that lives inside YouTube's masthead.
   const HEAD_CSS = `
     :host { all: initial; }
+    .hud { display: flex; align-items: center; }
     .bar { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 12px;
-           border-radius: 16px; background: rgba(255,255,255,.08);
+           border-radius: 16px; background: rgba(255,255,255,.08); cursor: default;
            font-family: Roboto, "Segoe UI", system-ui, sans-serif; font-size: 12px; color: #f1f1f1;
            white-space: nowrap; user-select: none; }
+    .bar:hover { background: rgba(255,255,255,.14); }
     .bar.dim { opacity: .55; }
     .b-logo { font-size: 13px; opacity: .85; }
     .b-item { display: inline-flex; align-items: center; gap: 4px; }
@@ -848,6 +910,33 @@
     .b-item.over .t, .b-item.over .r { color: #ff6b6b; }
     .b-tag { text-transform: uppercase; font-size: 10px; font-weight: 700; color: #aaa;
              border: 1px solid currentColor; border-radius: 6px; padding: 1px 5px; }
+
+    /* hover breakdown */
+    .pop { position: fixed; z-index: 2147483647; width: 320px; max-width: 92vw; cursor: default;
+           background: #11141c; color: #e6edf3; border: 1px solid #2b3140; border-radius: 12px;
+           box-shadow: 0 16px 48px rgba(0,0,0,.6); padding: 12px;
+           font-family: Roboto, "Segoe UI", system-ui, sans-serif; }
+    .pop[hidden] { display: none; }
+    .ph { display: flex; align-items: baseline; justify-content: space-between; }
+    .ph .pt { font-weight: 700; font-size: 13px; }
+    .ph .pn { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .plane { display: flex; gap: 12px; font-size: 12px; color: #b9c2cf; margin: 8px 0;
+             padding-bottom: 10px; border-bottom: 1px solid #1e2430; }
+    .plane b { font-weight: 700; color: #e6edf3; font-variant-numeric: tabular-nums; }
+    .pv { display: grid; grid-template-columns: 9px 1fr auto; align-items: center; gap: 9px; padding: 5px 2px; }
+    .pv + .pv { border-top: 1px solid #161b24; }
+    .pdot { width: 9px; height: 9px; border-radius: 50%; }
+    .pi { min-width: 0; }
+    .pti { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc { font-size: 11px; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pse { font-size: 12px; color: #b9c2cf; font-variant-numeric: tabular-nums; }
+    .pmore { color: #8b949e; font-size: 11.5px; padding: 6px 2px 2px; }
+    .pempty { color: #8b949e; font-size: 12.5px; padding: 6px 2px; }
+    .pfoot { margin-top: 10px; }
+    .pbtn { width: 100%; display: block; text-align: center; font: inherit; font-size: 12.5px; font-weight: 600;
+            color: #e6edf3; background: #1a1f2b; border: 1px solid #2b3140; border-radius: 8px;
+            padding: 8px; cursor: pointer; }
+    .pbtn:hover { background: #222838; }
   `;
 
   // Transient fullscreen nudge, mounted inside the fullscreen element so it paints over video.

@@ -31,6 +31,8 @@ async function handle(msg) {
     case 'classifyMany': return classifyMany(msg.metas);
     case 'tick':         return tick(msg.payload);
     case 'getState':     return getState();
+    case 'getTodayVideos': return getTodayVideos();
+    case 'openHistory':  return openHistory();
     case 'reclassify':   return reclassify(msg.payload);
     case 'takePass':     return takePass(msg.payload);
     case 'driftEvent':   return bumpDrift();
@@ -76,12 +78,46 @@ async function tick(p) {
   const [config, ledger] = await Promise.all([getConfig(), getLedger()]);
   if (!config.enabled || config.pausedUntil > Date.now()) return state(config, ledger);
 
-  const lane = p.lane in ledger.today.byLane ? p.lane : 'unset';
+  const t = ledger.today;
+  const lane = p.lane in t.byLane ? p.lane : 'unset';
   const burn = p.burnMultiplier || 1;
-  ledger.today.byLane[lane] += p.seconds * burn;
+  t.byLane[lane] += p.seconds * burn;
+
+  // Per-video log: real seconds spent (pre-burn) keyed by video, so we can show where
+  // the lane totals came from. Title/channel arrive once scraped; keep the last non-empty.
+  if (p.videoId) {
+    t.videos = t.videos || {};
+    const rec = t.videos[p.videoId] || (t.videos[p.videoId] = { sec: 0, lane, title: '', channel: '', last: 0 });
+    rec.sec += p.seconds;
+    rec.lane = lane;
+    if (p.title) rec.title = p.title;
+    if (p.channel) rec.channel = p.channel;
+    rec.last = Date.now();
+  }
 
   await setLedger(ledger);
   return state(config, ledger);
+}
+
+// Today's watched videos, most-time-first — feeds the header hover breakdown.
+async function getTodayVideos() {
+  const ledger = await getLedger();
+  const vids = ledger.today.videos || {};
+  const videos = Object.entries(vids)
+    .map(([videoId, r]) => ({
+      videoId, title: r.title || '', channel: r.channel || '',
+      lane: r.lane || 'unset', sec: r.sec || 0, last: r.last || 0,
+    }))
+    .filter((v) => v.sec >= 1)
+    .sort((a, b) => b.sec - a.sec);
+  return { videos };
+}
+
+// Content scripts can't open extension pages directly (CSP / web-accessible rules),
+// so the worker opens the history tab on their behalf.
+async function openHistory() {
+  await chrome.tabs.create({ url: chrome.runtime.getURL('src/history/history.html') });
+  return { ok: true };
 }
 
 const capSec = (config, lane) => (config.budgets?.[lane]?.dailyMinutes || 0) * 60; // 0 ⇒ unlimited

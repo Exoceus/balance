@@ -32,7 +32,23 @@ function freshDay() {
     byLane: { enrich: 0, recharge: 0, drift: 0, unset: 0 }, // seconds watched
     bonusSec: { recharge: 0, drift: 0 },                    // temporary extensions from "take a pass"
     driftEvents: 0,                                         // rabbit-holes caught
+    videos: {},                                            // videoId -> { sec, lane, title, channel, last }
   };
+}
+
+// Archived days only keep their top-N watched videos, so ~8 weeks of per-video
+// detail stays small. Today is left intact (a single day is naturally bounded).
+function pruneDayVideos(day, keep = 60) {
+  const v = day.videos;
+  if (!v) return day;
+  const ids = Object.keys(v);
+  if (ids.length > keep) {
+    const top = ids.sort((a, b) => (v[b].sec || 0) - (v[a].sec || 0)).slice(0, keep);
+    const out = {};
+    for (const id of top) out[id] = v[id];
+    day.videos = out;
+  }
+  return day;
 }
 
 export async function getLedger() {
@@ -40,7 +56,7 @@ export async function getLedger() {
   if (!ledger) ledger = { today: freshDay(), history: [] };
 
   if (ledger.today.dateKey !== todayKey()) {       // daily rollover
-    ledger.history.unshift(ledger.today);
+    ledger.history.unshift(pruneDayVideos(ledger.today));
     ledger.history = ledger.history.slice(0, 56);  // keep ~8 weeks
     ledger.today = freshDay();
     await area.set({ ledger });
