@@ -1,0 +1,44 @@
+:root {
+  --bg: #0d1017; --panel: #11141c; --line: #232a37; --text: #e6edf3; --muted: #8b949e;
+  --enrich: #3fb950; --recharge: #d2a000; --drift: #e5534b; --unset: #6b7280;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 Roboto, "Segoe UI", system-ui, sans-serif;
+}
+.wrap { max-width: 820px; margin: 0 auto; padding: 28px 20px 60px; }
+h1 { font-size: 22px; display: flex; align-items: center; gap: 8px; margin: 0 0 2px; }
+.logo { font-size: 22px; }
+.muted { color: var(--muted); }
+section {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px; margin-top: 16px;
+}
+
+/* summary cards */
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+.scard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.scard .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.scard .v { font-size: 26px; font-weight: 800; margin: 4px 0 8px; font-variant-numeric: tabular-nums; }
+.scard .split { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.scard .split b { color: var(--text); font-weight: 700; }
+
+/* legend */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+.legend i.d { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+.d.enrich { background: var(--enrich); } .d.recharge { background: var(--recharge); }
+.d.drift { background: var(--drift); } .d.unset { background: var(--unset); }
+
+/* per-day rows */
+.days { display: flex; flex-direction: column; gap: 10px; }
+.day { display: grid; grid-template-columns: 110px 1fr 72px; align-items: center; gap: 12px; }
+.day .lbl { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.day .lbl.today { color: var(--text); font-weight: 700; }
+.day .track { display: flex; height: 16px; background: #0c0f16; border: 1px solid var(--line);
+              border-radius: 6px; overflow: hidden; }
+.day .seg { height: 100%; }
+.day .seg.enrich { background: var(--enrich); } .day .seg.recharge { background: var(--recharge); }
+.day .seg.drift { background: var(--drift); } .day .seg.unset { background: var(--unset); }
+.day .tot { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 13px; }
+.day .tot.zero { color: var(--muted); font-weight: 400; }

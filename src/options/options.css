@@ -1,0 +1,50 @@
+:root {
+  --bg: #0d1017; --panel: #11141c; --line: #232a37; --text: #e6edf3; --muted: #8b949e;
+  --green: #3fb950; --amber: #d2a000; --red: #e5534b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 Roboto, "Segoe UI", system-ui, sans-serif;
+}
+.wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 60px; }
+h1 { font-size: 22px; display: flex; align-items: center; gap: 8px; margin: 0 0 2px; }
+.logo { font-size: 22px; }
+h2 { font-size: 15px; margin: 0 0 4px; }
+.muted { color: var(--muted); }
+small { color: var(--muted); }
+section {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px; margin-top: 16px;
+}
+
+.seg { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.seg label { display: flex; align-items: baseline; gap: 8px; cursor: pointer; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.grid label.check { flex-direction: row; align-items: center; }
+input[type="number"], input[type="text"], select {
+  background: #0c0f16; color: var(--text); border: 1px solid var(--line);
+  border-radius: 7px; padding: 7px 9px; font: inherit;
+}
+input[type="number"] { width: 90px; }
+
+.addrow { display: flex; gap: 8px; margin: 10px 0; }
+.addrow input[type="text"] { flex: 1; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+td { padding: 7px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+td.lane { font-weight: 600; }
+td .x { color: var(--red); cursor: pointer; background: none; border: none; font: inherit; }
+code { background: #0c0f16; padding: 1px 5px; border-radius: 5px; }
+
+button {
+  font: inherit; font-weight: 600; color: var(--text);
+  background: #1a1f2b; border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 12px; cursor: pointer;
+}
+button:hover { background: #222838; }
+button.ghost { background: transparent; }
+#resetAll, #clearLedger { color: var(--red); border-color: #5a2a28; }
+#resetRules { margin-top: 10px; }

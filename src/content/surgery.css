@@ -1,0 +1,85 @@
+/* src/content/surgery.css — Page Surgeon. Every rule is gated on a class that content.js
+   toggles on <html> per the active profile. Centralized here so when YouTube changes its
+   DOM there's exactly one place to fix. Failure mode is safe: a stale selector just means a
+   recommendation shows again, never a broken page. */
+
+/* ---- Home feed ---- */
+html.balance-hide-home ytd-browse[page-subtype="home"] ytd-rich-grid-renderer,
+html.balance-hide-home ytd-browse[page-subtype="home"] #contents.ytd-rich-grid-renderer {
+  display: none !important;
+}
+html.balance-dim-home ytd-browse[page-subtype="home"] ytd-rich-grid-renderer {
+  opacity: .12;
+  transition: opacity .15s ease;
+}
+html.balance-dim-home ytd-browse[page-subtype="home"] ytd-rich-grid-renderer:hover {
+  opacity: 1;
+}
+
+/* A calm placeholder where the feed used to be. Shown until content.js swaps in the
+   curated sections; once it does (html.balance-curated) this is suppressed so the
+   "resting" line doesn't double up with the rendered one. */
+html.balance-hide-home ytd-browse[page-subtype="home"] #primary::before {
+  content: "The feed is resting. Search, or open a subscription.";
+  display: block;
+  margin: 18vh auto 0;
+  max-width: 520px;
+  text-align: center;
+  color: #8b949e;
+  font: 500 16px/1.5 Roboto, system-ui, sans-serif;
+}
+html.balance-curated ytd-browse[page-subtype="home"] #primary::before {
+  content: none;
+}
+
+/* While content.js scans the feed it adds .balance-scanning, which temporarily
+   *renders* the grid off-screen-invisible (display:none stops YouTube's lazy
+   renderer from ever populating the tiles, so there'd be nothing to scrape).
+   Invisible + non-interactive + behind everything; removed the moment we're done.
+   Placed after the hide rule so its !important display wins by source order. */
+html.balance-scanning ytd-browse[page-subtype="home"] ytd-rich-grid-renderer {
+  display: block !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 1200px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -2147483647 !important;
+}
+html.balance-scanning ytd-browse[page-subtype="home"] #contents.ytd-rich-grid-renderer {
+  display: block !important;
+}
+
+/* ---- Sidebar / Up-next / related ---- */
+html.balance-hide-sidebar #related,
+html.balance-hide-sidebar ytd-watch-next-secondary-results-renderer {
+  display: none !important;
+}
+html.balance-dim-sidebar #related {
+  opacity: .12;
+  transition: opacity .15s ease;
+}
+html.balance-dim-sidebar #related:hover {
+  opacity: 1;
+}
+
+/* ---- Shorts shelves + nav entries ---- */
+html.balance-hide-shorts ytd-reel-shelf-renderer,
+html.balance-hide-shorts ytd-rich-shelf-renderer[is-shorts],
+html.balance-hide-shorts ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html.balance-hide-shorts ytd-guide-entry-renderer:has(a[title="Shorts"]),
+html.balance-hide-shorts ytd-mini-guide-entry-renderer:has(a[title="Shorts"]) {
+  display: none !important;
+}
+
+/* ---- End-screen suggestion cards ---- */
+html.balance-hide-endscreen .ytp-endscreen-content,
+html.balance-hide-endscreen .ytp-ce-element {
+  display: none !important;
+}
+
+/* ---- Comments ---- */
+html.balance-hide-comments ytd-comments#comments {
+  display: none !important;
+}

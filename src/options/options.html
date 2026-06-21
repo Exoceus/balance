@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Balance — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1><span class="logo">⚖</span> Balance settings</h1>
+    <p class="muted">Personal-use MVP. Changes save instantly.</p>
+
+    <section>
+      <h2>Layout surgery</h2>
+      <p class="muted">How aggressively to neutralize YouTube's recommendation surfaces.</p>
+      <div class="seg" id="surgery">
+        <label><input type="radio" name="surgery" value="gentle" /> Gentle <small>dim recs</small></label>
+        <label><input type="radio" name="surgery" value="balanced" /> Balanced <small>hide feed + sidebar + autoplay</small></label>
+        <label><input type="radio" name="surgery" value="strict" /> Strict <small>+ shorts, end-screen, comments</small></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Daily caps</h2>
+      <p class="muted">Fixed minutes per day for each lane. 0 = unlimited.</p>
+      <div class="grid">
+        <label>🟢 Enrich minutes / day <input type="number" id="capEnrich" min="0" max="600" /></label>
+        <label>🟡 Recharge minutes / day <input type="number" id="capRecharge" min="0" max="600" /></label>
+        <label>🔴 Drift minutes / day <input type="number" id="capDrift" min="0" max="600" /></label>
+        <label class="check"><input type="checkbox" id="shortsAsDrift" /> Treat Shorts as Drift</label>
+        <label>Unknown video defaults to
+          <select id="defaultLane">
+            <option value="recharge">🟡 Recharge</option>
+            <option value="enrich">🟢 Enrich</option>
+            <option value="drift">🔴 Drift</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Channel lanes</h2>
+      <p class="muted">Explicit per-channel overrides (strongest signal). Built up as you reclassify.</p>
+      <div class="addrow">
+        <input type="text" id="newChannel" placeholder="channel name or id" />
+        <select id="newChannelLane">
+          <option value="enrich">🟢 Enrich</option>
+          <option value="recharge">🟡 Recharge</option>
+          <option value="drift">🔴 Drift</option>
+        </select>
+        <button id="addChannel">Add</button>
+      </div>
+      <table id="channelTable"><tbody></tbody></table>
+    </section>
+
+    <section>
+      <h2>Keyword rules</h2>
+      <p class="muted">Title/description signals. One per row: pattern (regex) · lane · weight.</p>
+      <div class="addrow">
+        <input type="text" id="newPattern" placeholder="regex e.g. \\b(reaction|memes?)\\b" />
+        <select id="newRuleLane">
+          <option value="drift">🔴 Drift</option>
+          <option value="enrich">🟢 Enrich</option>
+          <option value="recharge">🟡 Recharge</option>
+        </select>
+        <input type="number" id="newWeight" value="2" min="1" max="5" title="weight" />
+        <button id="addRule">Add</button>
+      </div>
+      <table id="ruleTable"><tbody></tbody></table>
+      <button class="ghost" id="resetRules">Reset to default rules</button>
+    </section>
+
+    <section>
+      <h2>Danger zone</h2>
+      <button class="ghost" id="clearLedger">Reset today's counts</button>
+      <button class="ghost" id="resetAll">Reset everything</button>
+    </section>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
